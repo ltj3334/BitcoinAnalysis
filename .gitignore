@@ -124,3 +124,12 @@ ENV/
 
 # mypy
 .mypy_cache/
+
+
+## TJ 추가 
+/Note
+/Manual
+/Legacy
+/IITPScript
+/DatabaseBuilder
+/BitcoinBlockSampler
