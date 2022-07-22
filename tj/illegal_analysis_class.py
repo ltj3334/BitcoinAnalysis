@@ -1,4 +1,5 @@
 import multiprocessing
+import os
 import numpy as np
 import pandas as pd 
 import sqlite3
@@ -37,7 +38,7 @@ class illegal_analysis():
         self.ToManyTxAddrList = []
 
     def __get_indexed_address_using_origin_address(self, target_addr_list_file_path):
-        target_addr = pd.read_csv(f"./{target_addr_list_file_path}", header = 0)
+        target_addr = pd.read_csv(f"./address/{target_addr_list_file_path}", header = 0)
         print(f"Using Origin Address Value, Target Address List Load SUCCESS")
         print(f"Count of Address : {len(target_addr)}")
         target_addr = target_addr.drop_duplicates(['Address'])
@@ -293,7 +294,7 @@ class illegal_analysis():
 
             self.addr_mean_derivation_value_hash[addr].append(mean_value)
             self.addr_mean_derivation_value_hash[addr].append(derivation_value)
-            self.addr_mean_derivation_value_hash[addr].extend(sigma_result*(100 / len(usd_list)))
+            # self.addr_mean_derivation_value_hash[addr].extend(sigma_result*(100 / len(usd_list)))
 
         return self.addr_mean_derivation_value_hash
 
@@ -341,7 +342,7 @@ class illegal_analysis():
 ########  변수 입력  #############################################################################
 core_db_path = "dbv3-core.db"
 index_db_path ="dbv3-index.db"
-bitcoin_price_file_path = '220503_illegal_analysis_bitcoin_price_unixtime.csv'
+bitcoin_price_file_path = 'illegal_analysis_bitcoin_price_unixtime.csv'
 # target_addr_list_file_path = '220523_abuse_only_address.csv'
 # target_addr_list_file_path = '220529_abuse_only_address_short.csv'
 # target_addr_list_file_path = '220217_elliptic_addr.csv'
@@ -356,64 +357,73 @@ bitcoin_price_file_path = '220503_illegal_analysis_bitcoin_price_unixtime.csv'
 # '220714_bithumb_address.csv'
 
 
-target_file_list = ['220712_MerchantChainalysis_address.csv', '220217_elliptic_addr.csv', '220706_new_address.csv', '220714_upbit_address.csv']
-
-
-for file in target_file_list:
+for file in os.listdir('./address'):
     il = illegal_analysis(core_db_path, index_db_path, bitcoin_price_file_path)
     il.calc_derivation_using_tx_list(file)
     result = il.calc_sigma_value()
-    il.calc_jensen_shannon_value()
 
-    target_name = file.split('_')
+    target_name = file.split("_")
 
-    kld_df = (pd.DataFrame(list(il.addr_kld_hash.items()),columns=['Address', 'usd_list_kld']))
-    kld_mean_df = (pd.DataFrame(list(il.addr_mean_kld_hash.items()),columns=['Address', 'mean_kld']))
-    kld_df.to_csv(f'220720_{target_name[1]}_{target_name[2]}_kld_result.csv', header = False, index= False)
-    kld_mean_df.to_csv(f'220720_{target_name[1]}_{target_name[2]}_kld_mean_result.csv', header = False, index= False)
+    saved_list = []
+
+    for addr, [mean, std] in result.items():
+        saved_list.append(addr, mean, std)
+
+    saved_df = pd.DataFrame(saved_list)
+    saved_df.columns = ['Address', 'Mean', 'Std']
+    saved_df.to_csv(f"{target_name[0]}_{target_name[1]}_mean_std_result.csv", header = False, index = False)
+
+
+    # il.calc_jensen_shannon_value()
+
+    # target_name = file.split('_')
+
+    # kld_df = (pd.DataFrame(list(il.addr_kld_hash.items()),columns=['Address', 'usd_list_kld']))
+    # kld_mean_df = (pd.DataFrame(list(il.addr_mean_kld_hash.items()),columns=['Address', 'mean_kld']))
+    # kld_df.to_csv(f'220721_{target_name[0]}_{target_name[1]}_kld_result.csv', header = False, index= False)
+    # kld_mean_df.to_csv(f'220721_{target_name[0]}_{target_name[1]}_kld_mean_result.csv', header = False, index= False)
     
-exit()
 
-count = len(result.keys())
+# count = len(result.keys())
 
-print(f"Calculated Address : {count}")
+# print(f"Calculated Address : {count}")
 
-save_list = []
+# save_list = []
 
 
-for addr, [mean_value, std_value, one_sigma, one_one_sigma, one_two_sigma, one_three_sigma, one_four_sigma, one_five_sigma, two_sigma, three_sigma] in result.items():
+# for addr, [mean_value, std_value, one_sigma, one_one_sigma, one_two_sigma, one_three_sigma, one_four_sigma, one_five_sigma, two_sigma, three_sigma] in result.items():
     
-    il.curIndex.execute(f"SELECT AddrID.addr FROM AddrID WHERE AddrID.id = {addr}")
-    origin_addr = il.curIndex.fetchone()[0]
+#     il.curIndex.execute(f"SELECT AddrID.addr FROM AddrID WHERE AddrID.id = {addr}")
+#     origin_addr = il.curIndex.fetchone()[0]
     
-    save_list.append([origin_addr, mean_value, std_value, one_sigma, one_one_sigma, one_two_sigma, one_three_sigma, one_four_sigma, one_five_sigma, two_sigma, three_sigma])
+#     save_list.append([origin_addr, mean_value, std_value, one_sigma, one_one_sigma, one_two_sigma, one_three_sigma, one_four_sigma, one_five_sigma, two_sigma, three_sigma])
 
 
-result = pd.DataFrame(save_list)
+# result = pd.DataFrame(save_list)
 
-result.columns = ['addr', 'mean_value', 'std_value', '1sigma', '1.1sigma', '1.2sigma', '1.3sigma', '1.4sigma', '1.5sigma','2sigma', '3sigma'] # value : stdvalue(다대1) 혹은 입금된 금액(1대1, 1대다, 다대다 구조)
+# result.columns = ['addr', 'mean_value', 'std_value', '1sigma', '1.1sigma', '1.2sigma', '1.3sigma', '1.4sigma', '1.5sigma','2sigma', '3sigma'] # value : stdvalue(다대1) 혹은 입금된 금액(1대1, 1대다, 다대다 구조)
 
-target_name_token = target_addr_list_file_path.split("_")
-target_name = target_name_token[1]
-result.to_csv(f'220713_illegal_analysis_{target_name}_result.csv', index = False)
-print(f'220713_illegal_analysis_{target_name}_result.csv saved')
-print(f"Total result Length : {len(result)}")
+# target_name_token = target_addr_list_file_path.split("_")
+# target_name = target_name_token[1]
+# result.to_csv(f'220713_illegal_analysis_{target_name}_result.csv', index = False)
+# print(f'220713_illegal_analysis_{target_name}_result.csv saved')
+# print(f"Total result Length : {len(result)}")
 
-one_sigma = result[(result['1sigma'] >= 90.0)]
-one_one_sigma = result[(result['1.1sigma'] >= 90.0)]
-one_two_sigma = result[(result['1.2sigma'] >= 90.0)]
-one_three_sigma = result[(result['1.3sigma'] >= 90.0)]
-one_four_sigma = result[(result['1.4sigma'] >= 90.0)]
-one_five_sigma = result[(result['1.5sigma'] >= 90.0)]
-two_sigma = result[(result['2sigma'] >= 90.0)]
-three_sigma = result[(result['3sigma'] >= 90.0)]
+# one_sigma = result[(result['1sigma'] >= 90.0)]
+# one_one_sigma = result[(result['1.1sigma'] >= 90.0)]
+# one_two_sigma = result[(result['1.2sigma'] >= 90.0)]
+# one_three_sigma = result[(result['1.3sigma'] >= 90.0)]
+# one_four_sigma = result[(result['1.4sigma'] >= 90.0)]
+# one_five_sigma = result[(result['1.5sigma'] >= 90.0)]
+# two_sigma = result[(result['2sigma'] >= 90.0)]
+# three_sigma = result[(result['3sigma'] >= 90.0)]
 
 
-print(f"More than 90% of deposits exist within 1 sigma range : {len(one_sigma)}, {len(one_sigma)/ len(result) * 100}")
-print(f"More than 90% of deposits exist within 1.1 sigma range : {len(one_one_sigma)}, {len(one_one_sigma)/ len(result) * 100}")
-print(f"More than 90% of deposits exist within 1.2 sigma range : {len(one_two_sigma)}, {len(one_two_sigma)/ len(result) * 100}")
-print(f"More than 90% of deposits exist within 1.3 sigma range : {len(one_three_sigma)}, {len(one_three_sigma)/ len(result) * 100}")
-print(f"More than 90% of deposits exist within 1.4 sigma range : {len(one_four_sigma)}, {len(one_four_sigma)/ len(result) * 100}")
-print(f"More than 90% of deposits exist within 1.5 sigma range : {len(one_five_sigma)}, {len(one_five_sigma)/ len(result) * 100}")
-print(f"More than 90% of deposits exist within 2 sigma range : {len(two_sigma)}, {len(two_sigma)/ len(result) * 100}")
-print(f"More than 90% of deposits exist within 3 sigma range : {len(three_sigma)}, {len(three_sigma)/ len(result) * 100}")
+# print(f"More than 90% of deposits exist within 1 sigma range : {len(one_sigma)}, {len(one_sigma)/ len(result) * 100}")
+# print(f"More than 90% of deposits exist within 1.1 sigma range : {len(one_one_sigma)}, {len(one_one_sigma)/ len(result) * 100}")
+# print(f"More than 90% of deposits exist within 1.2 sigma range : {len(one_two_sigma)}, {len(one_two_sigma)/ len(result) * 100}")
+# print(f"More than 90% of deposits exist within 1.3 sigma range : {len(one_three_sigma)}, {len(one_three_sigma)/ len(result) * 100}")
+# print(f"More than 90% of deposits exist within 1.4 sigma range : {len(one_four_sigma)}, {len(one_four_sigma)/ len(result) * 100}")
+# print(f"More than 90% of deposits exist within 1.5 sigma range : {len(one_five_sigma)}, {len(one_five_sigma)/ len(result) * 100}")
+# print(f"More than 90% of deposits exist within 2 sigma range : {len(two_sigma)}, {len(two_sigma)/ len(result) * 100}")
+# print(f"More than 90% of deposits exist within 3 sigma range : {len(three_sigma)}, {len(three_sigma)/ len(result) * 100}")
