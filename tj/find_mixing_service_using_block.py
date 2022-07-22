@@ -5,8 +5,6 @@ import numpy as np
 import sqlite3
 from collections import defaultdict
 from tqdm import tqdm
-from anytree import Node, RenderTree
-from anytree.exporter import DotExporter
 from collections import deque
 
 class find_mixer():
