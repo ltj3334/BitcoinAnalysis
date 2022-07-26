@@ -367,7 +367,7 @@ for file in os.listdir('./address'):
     saved_list = []
 
     for addr, [mean, std] in result.items():
-        saved_list.append(addr, mean, std)
+        saved_list.append([addr, mean, std])
 
     saved_df = pd.DataFrame(saved_list)
     saved_df.columns = ['Address', 'Mean', 'Std']
