@@ -3,7 +3,7 @@ import pandas as pd
 from tqdm import tqdm
 import sqlite3
 
-file_name = '600_to_700_dollar_mixing_result.csv'
+file_name = '600_to_700_dollar_mixing_result_test.csv'
 df = pd.read_csv(file_name, header=0)
 addr_id = df['Addr']
 addr_id = addr_id.drop_duplicates()
