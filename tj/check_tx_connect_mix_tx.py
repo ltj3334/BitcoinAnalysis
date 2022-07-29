@@ -27,13 +27,16 @@ class Check_tx_connect_mixing_tx():
         self.addr_tx_dict = self._make_tx_out_in_mixing_tx(indexed_address_list)
         self.save_list = self._check_tx_in_mixing_tx(self.addr_tx_dict, self.MixingTxList)
 
-        target_name = tx_list_file_path.split("_")
+        # target_name = tx_list_file_path.split("_")
+        save_name = tx_list_file_path[:-11]
+        
         
         if self.save_list:
             save_df = pd.DataFrame(self.save_list)
             save_df.columns = ['Addr','Tx']
-            save_df.to_csv(f"{target_name[0]}_{target_name[1]}_{target_name[2]}_{target_name[3]}_mixing_result_test.csv", header = True, index= False)
-            print("save_success")
+            save_df.to_csv(f"{save_name}_check_mixing_result.csv", header = True, index= False)
+            self.outfile_name = f"{save_name}_check_mixing_result.csv"
+            print("Check mixing result save_success")
 
     def _find_txout_addr(self):
         indexed_address_list = []
@@ -90,11 +93,14 @@ class Check_tx_connect_mixing_tx():
         return save_tx_list
 
 
-
-target_mixing_tx_list_file = "0_to_730000_block_mixing_address.csv"
-core_db_path = "dbv3-core.db"
-index_db_path ="dbv3-index.db"
-service_db_path = "dbv3-service.db"
-file = '600_to_700_dollar_result.csv'
 if __name__ == "__main__":        
+    target_mixing_tx_list_file = "0_to_730000_block_mixing_address.csv"
+    core_db_path = "dbv3-core.db"
+    index_db_path ="dbv3-index.db"
+    service_db_path = "dbv3-service.db"
+    file = '600_to_700_dollar_result.csv'
     check = Check_tx_connect_mixing_tx(index_db_path, core_db_path, service_db_path, file, target_mixing_tx_list_file, tqdm_off=False)
+
+
+
+# 시세로 서치 --> 찾은 Tx들의 Txout Addr 서치 --> Txout Addr의 모든 tx를 믹싱 tx와 비교 같으면 저장

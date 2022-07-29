@@ -100,7 +100,7 @@ class find_price():
 
             # 2시그마 범위 내에 있는 녀석들만 입력
             usd_list = np.array(btc_list) * market_price
-            two_std = np.std(usd_list) * 1
+            two_std = np.std(usd_list) * 2
             results = usd_list[np.where(np.logical_and(usd_list>(usd_list.mean() - two_std),usd_list<(usd_list.mean()+two_std)))]
             
             if len(usd_list) == len(results):            
@@ -141,7 +141,7 @@ class find_price():
             
         save_df = pd.DataFrame(save_list)
         save_df.columns = ['id','txid']
-        save_df.to_csv(f"{self.price_range[0]}_to_{self.price_range[1]}_dollar_result.csv", index=False, header=False)
+        save_df.to_csv(f"220728_{self.price_range[0]}_to_{self.price_range[1]}_dollar_result.csv", index=False, header=False)
         
             
 # bc1q7y0qslexnsd5ra6vwsnkyk5yfl8dnqznl0yqkw
