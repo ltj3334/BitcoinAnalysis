@@ -234,13 +234,13 @@ class find_price():
 # bc1q7y0qslexnsd5ra6vwsnkyk5yfl8dnqznl0yqkw
 # 692529
 if __name__ == "__main__":
-    target_path = 'chainalysis_ransomware_address.csv'
+    target_path = 'abuse_blackmail_address.csv'
     core_db_path = "dbv3-core.db"
     index_db_path ="dbv3-index.db"
     service_db_path = "dbv3-service.db"
     bitcoin_price_file_path = 'illegal_analysis_bitcoin_price_unixtime.csv'
     target_mixing_tx_list_file = "0_to_730000_block_mixing_address.csv"
-    target_price = [500, 700]
+    target_price = [700, 1500]
     
     fp = find_price(index_db_path, core_db_path, service_db_path, bitcoin_price_file_path, target_price,target_path, tqdm_off=False)
     file = fp.outfile_name
