@@ -1,9 +1,8 @@
-import os
+import os, sys
 import time
 import sqlite3
 import multiprocessing
 
-from secret import rpc_user, rpc_password
 from time_manager import get_time
 from db_manager import QUERY, DBBuilder, DBReader
 from rpc_manager import RPCManager
@@ -15,6 +14,13 @@ DEBUG = False
 RESUME = True
 RPCM = None
 INDEX = None
+
+
+sys.path.append(os.path.dirname(os.path.abspath(os.path.dirname(__file__))))
+
+from DatabaseBuilder.secret import rpcuser as rpc_user
+from DatabaseBuilder.secret import rpcpassword as rpc_password
+# from secret import rpc_user, rpc_password
 
 
 def get_data_index(height):
