@@ -20,7 +20,7 @@ class Check_tx_connect_mixing_tx():
         self.indexed_address_list = []
         self.addr_tx_dict = defaultdict(list)
         self.tx_dataframe = pd.read_csv(tx_list_file_path,header=None)
-        self.tx_dataframe.columns =['id','txid']
+        self.tx_dataframe.columns = ['txid','addrid','addr','tx','is_illegal']
         self.save_list = []
 
         indexed_address_list = self._find_txout_addr()
@@ -30,30 +30,35 @@ class Check_tx_connect_mixing_tx():
         # target_name = tx_list_file_path.split("_")
         save_name = tx_list_file_path[:-11]
         
-        
         if self.save_list:
             save_df = pd.DataFrame(self.save_list)
-            save_df.columns = ['Addr','Tx']
+            save_df.columns = ['Addr','Tx','Original_Addr','is_illegal']
             save_df.to_csv(f"{save_name}_check_mixing_result.csv", header = True, index= False)
             self.outfile_name = f"{save_name}_check_mixing_result.csv"
             print("Check mixing result save_success")
+        
 
     def _find_txout_addr(self):
         indexed_address_list = []
-        txid_list = self.tx_dataframe['id'].to_numpy()
+        txid_list = self.tx_dataframe['txid'].to_numpy()
+        self.tx_addr_dict = defaultdict()
+        self.addr_tx_dict = defaultdict()
         
-        
-        n = 1999
+        n = 1999    
         slicing_indexed_tx_list = [txid_list[i * n:(i + 1) * n] for i in range((len(txid_list) + n - 1) // n )] 
+        
         for tx_list in tqdm(slicing_indexed_tx_list, desc = "Getting Address List", disable=self.tqdm_off):
             _tx_list = list(map(str, tx_list))
-            sql = f"select addr from TxOut where tx IN ({','.join(['?']*len(_tx_list))})"
-            self.curCore.execute(sql, _tx_list)
-            addr_list = self.curCore.fetchall()
-            if addr_list:
-                indexed_address_list.extend([x[0] for x in addr_list])
-        
+            sql = f"select addr, tx from TxOut where tx IN ({','.join(['?']*len(_tx_list))})"
+            query = self.curCore.execute(sql, _tx_list)
+            cols = [column[0] for column in query.description]
+            results= pd.DataFrame.from_records(data = query.fetchall(), columns = cols)
+            self.tx_addr_dict.update({k: g['addr'].tolist() for k,g in results.groupby("tx")})
+            self.addr_tx_dict.update({k: g['tx'].tolist() for k,g in results.groupby("addr")})
+            
+        indexed_address_list = list(self.addr_tx_dict.keys())
         return indexed_address_list
+    
     
 
     def _make_tx_out_in_mixing_tx(self, addr_list:list):
@@ -63,8 +68,6 @@ class Check_tx_connect_mixing_tx():
         slicing_indexed_addr_list = [addr_list[i * n:(i + 1) * n] for i in range((len(addr_list) + n - 1) // n )] 
         for addr_list in tqdm(slicing_indexed_addr_list, desc = "Getting Txout Tx List", disable=self.tqdm_off):
             _addr_list= list(map(str, addr_list))
-
-
             sql = f"SELECT addr, tx FROM TxOut WHERE addr IN ({','.join(['?']*len(_addr_list))})"
             query = self.curCore.execute(sql, _addr_list)
             cols = [column[0] for column in query.description]
@@ -81,13 +84,22 @@ class Check_tx_connect_mixing_tx():
         mixing_tx_list.sort()
         save_tx_list = []
 
-        for addr, tx_list in tqdm(addr_tx_dict.items(), desc = "check tx in mixing tx", disable=self.tqdm_off):  
+        for addr, tx_list in tqdm(addr_tx_dict.items(), desc = "check tx in mixing tx", disable=self.tqdm_off): 
+            
+            _tx = list(set(tx_list) & set(self.tx_addr_dict.keys()))[0]
+            _addr = self.tx_dataframe.loc[self.tx_dataframe['txid'] == _tx, ['addr']].values.tolist()[0][0]
+            _is_illegal = self.tx_dataframe.loc[self.tx_dataframe['txid'] == _tx, ['is_illegal']].values.tolist()[0][0]
+            
+            
+            # _condition = (self.tx_dataframe['addrid'] == _addr)
+            # _is_illegal = self.tx_dataframe.loc[_condition, ['is_illegal']]
+                
             for tx in tx_list:
                 # print(len(mixing_tx_list), tx)
-                yap = bisect.bisect_left(mixing_tx_list, tx)
+                tmp = bisect.bisect_left(mixing_tx_list, tx)
                 try:
-                    if mixing_tx_list[yap] == tx:
-                        save_tx_list.append([addr, tx])
+                    if mixing_tx_list[tmp] == tx:
+                        save_tx_list.append([addr, tx, _addr, _is_illegal])
                 except:
                     continue        
         return save_tx_list
@@ -98,7 +110,7 @@ if __name__ == "__main__":
     core_db_path = "dbv3-core.db"
     index_db_path ="dbv3-index.db"
     service_db_path = "dbv3-service.db"
-    file = '600_to_700_dollar_result.csv'
+    file = '450_to_1400_dollar_chainalysis_ransomware_result.csv'
     check = Check_tx_connect_mixing_tx(index_db_path, core_db_path, service_db_path, file, target_mixing_tx_list_file, tqdm_off=False)
 
 

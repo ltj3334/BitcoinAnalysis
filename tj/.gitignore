@@ -1,3 +1,4 @@
 *.out
 *.txt
 *.db
+/ml_code/data

@@ -5,8 +5,9 @@ import sqlite3
 
 
 class Conversion_addr():
-    def __init__(self, file_name) -> None:
+    def __init__(self, file_name, original_file_name) -> None:
         df = pd.read_csv(file_name, header=0)
+        
         addr_id = df['Addr']
         addr_id = addr_id.drop_duplicates()
 
@@ -25,17 +26,26 @@ class Conversion_addr():
             curIndex.execute(sql, _addr_list)
             addr_list = curIndex.fetchall()
             if addr_list:
-                indexed_address_list.extend([x[0] for x in addr_list])
+                addr_list = [x[0] for x in addr_list]
+                
+                for addr in addr_list:
+                    print(type(original_data['addr']))
+                    is_illegal = original_data[original_data['addr'] == addr]
+                    # is_illegal = original_data[is_illegal]
+                    print(is_illegal)          
+                    exit()
+                    # indexed_address_list.append([addr, is_illegal])
 
         index_df = pd.DataFrame(indexed_address_list)
-        index_df.columns = ['Address']
+        index_df.columns = ['Address', 'is_illegal']
    
         
-        
         target_name = file_name[:-11]
-        
-        
 
         index_df.to_csv(target_name+"_conversion_address.csv", header= False, index= False)
         
         
+if __name__ == "__main__":
+    original_file_name = '450_to_1400_dollar_chainalysis_ransomware_result.csv'
+    file_name = '450_to_1400_dollar_chainalysis_ransomware_check_mixing_result.csv'
+    ca = Conversion_addr(file_name, original_file_name)
